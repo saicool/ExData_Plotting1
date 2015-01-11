@@ -1,20 +1,34 @@
 #Fetching dataset into R
 
 fetch_data <- function() {
-    file <- "household_power_consumption.txt"
-    data <- read.table(file,
-                     header=TRUE,
-                     sep=";",
-                     colClasses=c("character", "character", rep("numeric",7)),
-                     na="?")
-    # convert date and time variables to Date/Time class
-    data$Time <- strptime(paste(data$Date, data$Time), "%d/%m/%Y %H:%M:%S")
-    data$Date <- as.Date(data$Date, "%d/%m/%Y")
-    # only use data from the dates 2007-02-01 and 2007-02-02
-    dates <- as.Date(c("2007-02-01", "2007-02-02"), "%Y-%m-%d")
-    data <- subset(data, Date %in% dates)
     
-    data
+    dataFile <- "household_power_consumption.csv"
+    if(file.exists(dataFile)) {
+      # if already downloaded, read the data directly
+      dat <- read.csv(dataFile)
+      dat$DateTime <- strptime(dat$DateTime, "%Y-%m-%d %H:%M:%S")
+      dat
+    }else {
+      # downloading the data archive from the given link
+      if(!file.exists("household_power_consumption.zip"))
+        dataArchive <- download.file("http://d396qusza40orc.cloudfront.net/exdata%2Fdata%2Fhousehold_power_consumption.zip", destfile= "household_power_consumption.zip", method="curl")
+      # extracting the data from the archive
+      conn <- unz(dataArchive, "household_power_consumption.txt")
+      # reading dataset into R
+      data <- read.table(conn,
+                         header=TRUE,
+                         sep=";",
+                         colClasses=c("character", "character", rep("numeric",7)),
+                         na="?")
+      
+      data <- data[(data$Date == "1/2/2007") | (data$Date == "2/2/2007"),]
+      # converting date and time to date/time class
+      data$DateTime <- strptime(paste(data$Date, data$Time), "%d/%m/%Y %H:%M:%S")
+      # writing downloaded data to a csv file
+      write.csv(data, dataFile)
+      data
+    }
+
     
 }
 
